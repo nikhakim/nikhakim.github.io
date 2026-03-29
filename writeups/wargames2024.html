@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wargames.MY 2024 Writeup — Forensics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green: #39ff6a;
+      --green-dim: #1a7a35;
+      --green-glow: rgba(57,255,106,0.10);
+      --amber: #ffb347;
+      --amber-dim: #a06a10;
+      --red: #ff5f6d;
+      --blue: #58a6ff;
+      --bg: #0a0d0a;
+      --bg2: #0f130f;
+      --bg3: #141914;
+      --border: rgba(57,255,106,0.15);
+      --border-bright: rgba(57,255,106,0.4);
+      --muted: #4a6b4a;
+      --text: #c8f0c8;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.8;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px
+      );
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      background: rgba(10,13,10,0.93);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+      padding: 0 2rem;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    nav a { text-decoration: none; font-size: 13px; }
+    .nav-back { color: var(--muted); transition: color 0.2s; }
+    .nav-back:hover { color: var(--green); }
+    .nav-back::before { content: '← '; }
+    .nav-crumb { color: var(--muted); font-size: 13px; }
+    .nav-crumb span { color: var(--green); }
+
+    .page {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 5rem 2rem 6rem;
+    }
+
+    .post-header {
+      margin-bottom: 3rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .post-eyebrow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .tag {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 2px;
+      border: 1px solid;
+    }
+
+    .tag-ctf { color: var(--amber); border-color: rgba(255,179,71,0.4); background: rgba(255,179,71,0.07); }
+    .tag-cat { color: var(--green); border-color: var(--border-bright); background: var(--green-glow); }
+    .tag-diff-easy { color: #50fa7b; border-color: rgba(80,250,123,0.35); background: rgba(80,250,123,0.07); }
+    .tag-diff-medium { color: var(--amber); border-color: rgba(255,179,71,0.35); background: rgba(255,179,71,0.07); }
+
+    .post-title {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 700;
+      color: var(--green);
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.8rem;
+    }
+
+    .post-meta { font-size: 12px; color: var(--muted); }
+    .post-meta span { color: var(--green-dim); }
+
+    .toc {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 3rem;
+    }
+
+    .toc-title {
+      font-size: 11px;
+      color: var(--amber);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 0.8rem;
+    }
+
+    .toc-title::before { content: '$ '; color: var(--green-dim); }
+
+    .toc ol { list-style: none; counter-reset: toc-counter; }
+    .toc ol li { counter-increment: toc-counter; padding: 3px 0; }
+    .toc ol li::before { content: counter(toc-counter, decimal-leading-zero) '. '; color: var(--green-dim); font-size: 12px; }
+    .toc a { color: var(--text); text-decoration: none; font-size: 13px; transition: color 0.2s; }
+    .toc a:hover { color: var(--green); }
+
+    .challenge { margin-bottom: 4.5rem; }
+
+    .challenge-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .challenge-num { font-size: 12px; color: var(--green-dim); }
+
+    h2.challenge-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--green);
+    }
+
+    .prose p { margin-bottom: 1rem; color: var(--text); opacity: 0.88; }
+    .prose strong { color: var(--green); font-weight: 500; }
+    .prose code {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 13px;
+      color: var(--amber);
+    }
+
+    .steps { display: flex; flex-direction: column; gap: 1.5rem; margin: 1.5rem 0; }
+
+    .step { display: flex; gap: 1rem; }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 26px;
+      height: 26px;
+      border: 1px solid var(--border-bright);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--green);
+      margin-top: 2px;
+    }
+
+    .step-content { flex: 1; }
+    .step-content p { margin-bottom: 0.5rem; color: var(--text); opacity: 0.88; }
+
+    .callout {
+      border-left: 3px solid;
+      padding: 0.8rem 1rem;
+      border-radius: 0 4px 4px 0;
+      margin: 1.2rem 0;
+      font-size: 13px;
+    }
+
+    .callout-info { border-color: var(--blue); background: rgba(88,166,255,0.07); color: var(--blue); }
+    .callout-success { border-color: var(--green); background: var(--green-glow); color: var(--green); }
+    .callout-warn { border-color: var(--amber); background: rgba(255,179,71,0.07); color: var(--amber); }
+
+    .callout-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+    .callout p { margin: 0; }
+
+    .flag-block {
+      background: var(--bg2);
+      border: 1px solid var(--border-bright);
+      border-radius: 4px;
+      padding: 1rem 1.4rem;
+      margin: 1.5rem 0;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .flag-icon { font-size: 11px; color: var(--green-dim); letter-spacing: 0.08em; }
+    .flag-val { font-size: 14px; font-weight: 700; color: var(--green); word-break: break-all; }
+
+    .img-row { display: flex; gap: 0.8rem; margin: 1.2rem 0; flex-wrap: wrap; }
+    .img-row.single { display: block; }
+
+    .img-wrap {
+      flex: 1;
+      min-width: 200px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .img-wrap img { width: 100%; height: auto; display: block; }
+
+    .img-caption {
+      font-size: 11px;
+      color: var(--muted);
+      padding: 6px 10px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .term {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 1.2rem 0;
+    }
+
+    .term-bar {
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      padding: 7px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .dot.r { background: #ff5f57; }
+    .dot.y { background: #febc2e; }
+    .dot.g { background: #28c840; }
+    .term-bar-label { font-size: 11px; color: var(--muted); margin-left: 4px; }
+
+    .term-body { padding: 0.9rem 1.1rem; font-size: 13px; }
+    .tl { margin-bottom: 0.2rem; }
+    .tl .p { color: var(--green); }
+    .tl .c { color: var(--text); }
+    .tl .o { color: var(--muted); }
+    .tl .v { color: var(--amber); }
+    .tl .kw { color: var(--blue); }
+    .tl .str { color: #f1fa8c; }
+
+    .code-block {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 1.2rem 0;
+    }
+
+    .code-block-header {
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      padding: 7px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .code-lang {
+      font-size: 11px;
+      color: var(--amber);
+      letter-spacing: 0.08em;
+    }
+
+    .code-file { font-size: 11px; color: var(--muted); }
+
+    .code-body {
+      padding: 1rem 1.2rem;
+      font-size: 13px;
+      line-height: 1.7;
+      overflow-x: auto;
+    }
+
+    .code-body .kw { color: var(--blue); }
+    .code-body .str { color: #f1fa8c; }
+    .code-body .cm { color: var(--muted); }
+    .code-body .fn { color: var(--green); }
+    .code-body .var { color: var(--text); }
+    .code-body .op { color: var(--amber); }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    footer a { color: var(--green-dim); text-decoration: none; }
+    footer a:hover { color: var(--green); }
+
+    @media (max-width: 500px) { .img-row { flex-direction: column; } }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="../index.html" class="nav-back">back</a>
+    <span class="nav-crumb">writeups / <span>wargames.my 2024</span></span>
+  </nav>
+
+  <div class="page">
+
+    <header class="post-header">
+      <div class="post-eyebrow">
+        <span class="tag tag-ctf">Wargames.MY 2024</span>
+        <span class="tag tag-cat">forensics</span>
+        <span class="tag tag-diff-easy">easy</span>
+      </div>
+      <h1 class="post-title">Wargames.MY 2024 — Forensics Writeup</h1>
+      <p class="post-meta">
+        <span>author:</span> 0xYOURHANDLE &nbsp;·&nbsp;
+        <span>event:</span> Wargames.MY 2024 &nbsp;·&nbsp;
+        <span>category:</span> Forensics &nbsp;·&nbsp;
+        <span>solved:</span> 1/1
+      </p>
+    </header>
+
+    <nav class="toc">
+      <div class="toc-title">table of contents</div>
+      <ol>
+        <li><a href="#unwanted-meow">Unwanted Meow — Binary Junk Removal</a></li>
+      </ol>
+    </nav>
+
+    <!-- CHALLENGE: UNWANTED MEOW -->
+    <section class="challenge" id="unwanted-meow">
+
+      <div class="challenge-header">
+        <span class="challenge-num">01 /</span>
+        <h2 class="challenge-title">Unwanted Meow</h2>
+        <span class="tag tag-cat">forensics</span>
+        <span class="tag tag-diff-easy">easy</span>
+      </div>
+
+      <div class="prose">
+        <p>
+          We're given a file called <code>flag.shredded</code>. The name and extension don't tell us much,
+          but the challenge hints that something has been deliberately corrupted. First step — figure out what the file actually is.
+        </p>
+      </div>
+
+      <div class="img-row">
+        <div class="img-wrap">
+          <img src="../wargames-media/image1.jpeg" alt="Challenge description" />
+          <div class="img-caption">fig 1 — challenge description</div>
+        </div>
+        <div class="img-wrap">
+          <img src="../wargames-media/image2.png" alt="File listing showing flag.shredded" />
+          <div class="img-caption">fig 2 — the shredded file</div>
+        </div>
+      </div>
+
+      <div class="callout callout-info">
+        <div class="callout-label">vulnerability / technique</div>
+        <p>Binary junk injection — the JPEG file has had the string <code>meow</code> repeatedly inserted throughout its raw bytes, corrupting the image data. Stripping those bytes restores the original file.</p>
+      </div>
+
+      <div class="steps">
+
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <p>
+              Rename <code>flag.shredded</code> to <code>flag.jpg</code> and try to open it.
+              The image opens but is clearly broken — visually shredded into unrecognisable slices.
+              This confirms it's a JPEG with corrupted data, not a completely different file type.
+            </p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <p>
+              Open <code>flag.jpg</code> in <strong>hexedit</strong> (or any hex editor) and inspect the raw bytes.
+              Scattered throughout the file, we spot the ASCII string <code>meow</code> repeated over and over —
+              this is the injected junk that's breaking the image.
+            </p>
+            <div class="img-row single">
+              <div class="img-wrap">
+                <img src="../wargames-media/image3.png" alt="Hexedit showing meow strings in the binary" />
+                <div class="img-caption">fig 3 — hexedit revealing repeated "meow" strings in the binary</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <p>
+              True to the challenge name — <em style="color:var(--amber)">Unwanted Meow</em> — we need to strip every
+              occurrence of <code>meow</code> from the raw binary. A short Python script does the job cleanly:
+              open the file in binary mode, replace all <code>b"meow"</code> occurrences with empty bytes, and write the result out.
+            </p>
+
+            <div class="code-block">
+              <div class="code-block-header">
+                <span class="code-lang">python</span>
+                <span class="code-file">clean.py</span>
+              </div>
+              <div class="code-body">
+<span class="cm"># remove all "meow" bytes from the corrupted JPEG</span>
+<span class="var">input_file</span>  <span class="op">=</span> <span class="str">"flag.jpg"</span>
+<span class="var">output_file</span> <span class="op">=</span> <span class="str">"flag_cleaned.jpg"</span>
+
+<span class="kw">with</span> <span class="fn">open</span>(<span class="var">input_file</span>, <span class="str">"rb"</span>) <span class="kw">as</span> <span class="var">infile</span>:
+    <span class="var">data</span> <span class="op">=</span> <span class="var">infile</span>.<span class="fn">read</span>()
+
+<span class="var">cleaned_data</span> <span class="op">=</span> <span class="var">data</span>.<span class="fn">replace</span>(<span class="kw">b</span><span class="str">"meow"</span>, <span class="kw">b</span><span class="str">""</span>)
+
+<span class="kw">with</span> <span class="fn">open</span>(<span class="var">output_file</span>, <span class="str">"wb"</span>) <span class="kw">as</span> <span class="var">outfile</span>:
+    <span class="var">outfile</span>.<span class="fn">write</span>(<span class="var">cleaned_data</span>)
+
+<span class="fn">print</span>(<span class="kw">f</span><span class="str">"cleaned file saved as {output_file}"</span>)
+              </div>
+            </div>
+
+            <div class="term">
+              <div class="term-bar">
+                <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+                <span class="term-bar-label">terminal</span>
+              </div>
+              <div class="term-body">
+                <div class="tl"><span class="p">$ </span><span class="c">python3 clean.py</span></div>
+                <div class="tl"><span class="o">cleaned file saved as flag_cleaned.jpg</span></div>
+              </div>
+            </div>
+
+            <div class="img-row single">
+              <div class="img-wrap">
+                <img src="../wargames-media/image4.png" alt="Script output confirming cleaned file saved" />
+                <div class="img-caption">fig 4 — script runs successfully, cleaned file written</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <p>
+              Open <code>flag_cleaned.jpg</code>. The image renders correctly and the flag is visible inside it.
+            </p>
+            <div class="img-row single">
+              <div class="img-wrap">
+                <img src="../wargames-media/image5.jpeg" alt="Cleaned image revealing the flag" />
+                <div class="img-caption">fig 5 — cleaned JPEG with the flag revealed</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /steps -->
+
+      <div class="callout callout-warn">
+        <div class="callout-label">key concept — binary file manipulation</div>
+        <p>
+          Image files are just structured sequences of bytes. Injecting arbitrary byte sequences (like <code>meow</code>)
+          anywhere outside the header will corrupt the pixel data, making the image unreadable to viewers.
+          Since JPEG doesn't have strong integrity checks, a simple byte replacement is enough to reverse the damage.
+          This technique is common in forensics CTFs — always inspect files in a hex editor before assuming they're truly broken.
+        </p>
+      </div>
+
+      <div class="flag-block">
+        <span class="flag-icon">FLAG</span>
+        <span class="flag-val">WGMY{4a4be40c96ac6314e91d93f38043a643}</span>
+      </div>
+
+    </section>
+
+  </div><!-- /page -->
+
+  <footer>
+    <a href="../index.html">← back to portfolio</a>
+    &nbsp;·&nbsp;
+    writeup by <span style="color:var(--green-dim)">0xYOURHANDLE</span>
+    &nbsp;·&nbsp;
+    Wargames.MY 2024
+  </footer>
+
+</body>
+</html>
