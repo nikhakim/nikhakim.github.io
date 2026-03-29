@@ -438,19 +438,19 @@
               </div>
               <div class="code-body">
 <span class="cm"># remove all "meow" bytes from the corrupted JPEG</span>
-<span class="var">input_file</span>  <span class="op">=</span> <span class="str">"flag.jpg"</span>
-<span class="var">output_file</span> <span class="op">=</span> <span class="str">"flag_cleaned.jpg"</span>
-
-<span class="kw">with</span> <span class="fn">open</span>(<span class="var">input_file</span>, <span class="str">"rb"</span>) <span class="kw">as</span> <span class="var">infile</span>:
-    <span class="var">data</span> <span class="op">=</span> <span class="var">infile</span>.<span class="fn">read</span>()
-
-<span class="var">cleaned_data</span> <span class="op">=</span> <span class="var">data</span>.<span class="fn">replace</span>(<span class="kw">b</span><span class="str">"meow"</span>, <span class="kw">b</span><span class="str">""</span>)
-
-<span class="kw">with</span> <span class="fn">open</span>(<span class="var">output_file</span>, <span class="str">"wb"</span>) <span class="kw">as</span> <span class="var">outfile</span>:
-    <span class="var">outfile</span>.<span class="fn">write</span>(<span class="var">cleaned_data</span>)
-
-<span class="fn">print</span>(<span class="kw">f</span><span class="str">"cleaned file saved as {output_file}"</span>)
-              </div>
+<br><span class="var">input_file</span>  <span class="op">=</span> <span class="str">"flag.jpg"</span>
+<br><span class="var">output_file</span> <span class="op">=</span> <span class="str">"flag_cleaned.jpg"</span>
+<br>
+<br><span class="kw">with</span> <span class="fn">open</span>(<span class="var">input_file</span>, <span class="str">"rb"</span>) <span class="kw">as</span> <span class="var">infile</span>:
+<br>&nbsp;&nbsp;&nbsp;&nbsp;<span class="var">data</span> <span class="op">=</span> <span class="var">infile</span>.<span class="fn">read</span>()
+<br>
+<br><span class="var">cleaned_data</span> <span class="op">=</span> <span class="var">data</span>.<span class="fn">replace</span>(<span class="kw">b</span><span class="str">"meow"</span>, <span class="kw">b</span><span class="str">""</span>)
+<br>
+<br><span class="kw">with</span> <span class="fn">open</span>(<span class="var">output_file</span>, <span class="str">"wb"</span>) <span class="kw">as</span> <span class="var">outfile</span>:
+<br>&nbsp;&nbsp;&nbsp;&nbsp;<span class="var">outfile</span>.<span class="fn">write</span>(<span class="var">cleaned_data</span>)
+<br>
+<br><span class="fn">print</span>(<span class="kw">f</span><span class="str">"cleaned file saved as {output_file}"</span>)
+</div>
             </div>
 
             <div class="term">
@@ -464,12 +464,6 @@
               </div>
             </div>
 
-            <div class="img-row single">
-              <div class="img-wrap">
-                <img src="../wargames-media/image4.png" alt="Script output confirming cleaned file saved" />
-                <div class="img-caption">fig 4 — script runs successfully, cleaned file written</div>
-              </div>
-            </div>
           </div>
         </div>
 
