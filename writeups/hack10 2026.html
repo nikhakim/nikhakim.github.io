@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hack10 2026 Writeup — boot2root: Freshman-v2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green: #39ff6a;
+      --green-dim: #1a7a35;
+      --green-glow: rgba(57,255,106,0.10);
+      --amber: #ffb347;
+      --red: #ff5f6d;
+      --blue: #58a6ff;
+      --purple: #bd93f9;
+      --bg: #0a0d0a;
+      --bg2: #0f130f;
+      --bg3: #141914;
+      --border: rgba(57,255,106,0.15);
+      --border-bright: rgba(57,255,106,0.4);
+      --muted: #4a6b4a;
+      --text: #c8f0c8;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.8;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px
+      );
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      background: rgba(10,13,10,0.93);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+      padding: 0 2rem;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    nav a { text-decoration: none; font-size: 13px; }
+    .nav-back { color: var(--muted); transition: color 0.2s; }
+    .nav-back:hover { color: var(--green); }
+    .nav-back::before { content: '← '; }
+    .nav-crumb { color: var(--muted); font-size: 13px; }
+    .nav-crumb span { color: var(--green); }
+
+    .page { max-width: 800px; margin: 0 auto; padding: 5rem 2rem 6rem; }
+
+    .post-header {
+      margin-bottom: 3rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .post-eyebrow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .tag { font-size: 11px; padding: 3px 10px; border-radius: 2px; border: 1px solid; }
+    .tag-ctf { color: var(--amber); border-color: rgba(255,179,71,0.4); background: rgba(255,179,71,0.07); }
+    .tag-cat { color: var(--green); border-color: var(--border-bright); background: var(--green-glow); }
+    .tag-diff-easy { color: #50fa7b; border-color: rgba(80,250,123,0.35); background: rgba(80,250,123,0.07); }
+    .tag-diff-medium { color: var(--amber); border-color: rgba(255,179,71,0.35); background: rgba(255,179,71,0.07); }
+    .tag-diff-hard { color: var(--red); border-color: rgba(255,95,109,0.35); background: rgba(255,95,109,0.07); }
+
+    .post-title {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 700;
+      color: var(--green);
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.8rem;
+    }
+
+    .post-meta { font-size: 12px; color: var(--muted); }
+    .post-meta span { color: var(--green-dim); }
+
+    /* attack chain */
+    .attack-chain {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.9rem 1.2rem;
+      margin-bottom: 3rem;
+      font-size: 12px;
+    }
+
+    .chain-label { color: var(--muted); margin-right: 0.4rem; }
+    .chain-step { color: var(--green); }
+    .chain-arrow { color: var(--green-dim); }
+
+    .toc {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 3rem;
+    }
+
+    .toc-title { font-size: 11px; color: var(--amber); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 0.8rem; }
+    .toc-title::before { content: '$ '; color: var(--green-dim); }
+    .toc ol { list-style: none; counter-reset: toc-counter; }
+    .toc ol li { counter-increment: toc-counter; padding: 3px 0; }
+    .toc ol li::before { content: counter(toc-counter, decimal-leading-zero) '. '; color: var(--green-dim); font-size: 12px; }
+    .toc a { color: var(--text); text-decoration: none; font-size: 13px; transition: color 0.2s; }
+    .toc a:hover { color: var(--green); }
+
+    /* phase headers */
+    .phase {
+      margin-bottom: 3.5rem;
+    }
+
+    .phase-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    .phase-num { font-size: 11px; color: var(--green-dim); }
+
+    h2.phase-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--green);
+    }
+
+    .prose p { margin-bottom: 1rem; color: var(--text); opacity: 0.88; }
+    .prose strong { color: var(--green); font-weight: 500; }
+    .prose a { color: var(--blue); text-decoration: none; }
+    .prose a:hover { text-decoration: underline; }
+    .prose code {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 13px;
+      color: var(--amber);
+    }
+
+    .steps { display: flex; flex-direction: column; gap: 1.5rem; margin: 1.2rem 0; }
+    .step { display: flex; gap: 1rem; }
+    .step-num {
+      flex-shrink: 0;
+      width: 26px; height: 26px;
+      border: 1px solid var(--border-bright);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: var(--green);
+      margin-top: 2px;
+    }
+    .step-content { flex: 1; }
+    .step-content p { margin-bottom: 0.6rem; color: var(--text); opacity: 0.88; }
+
+    .callout { border-left: 3px solid; padding: 0.8rem 1rem; border-radius: 0 4px 4px 0; margin: 1.2rem 0; font-size: 13px; }
+    .callout-info { border-color: var(--blue); background: rgba(88,166,255,0.07); color: var(--blue); }
+    .callout-warn { border-color: var(--amber); background: rgba(255,179,71,0.07); color: var(--amber); }
+    .callout-danger { border-color: var(--red); background: rgba(255,95,109,0.07); color: var(--red); }
+    .callout-success { border-color: var(--green); background: var(--green-glow); color: var(--green); }
+    .callout-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 0.3rem; opacity: 0.7; }
+    .callout p { margin: 0; }
+
+    .flag-block {
+      background: var(--bg2);
+      border: 1px solid var(--border-bright);
+      border-radius: 4px;
+      padding: 0.9rem 1.2rem;
+      margin: 1.2rem 0;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .flag-icon { font-size: 11px; letter-spacing: 0.08em; }
+    .flag-icon.user { color: var(--blue); }
+    .flag-icon.root { color: var(--amber); }
+    .flag-val { font-size: 14px; font-weight: 700; color: var(--green); word-break: break-all; }
+
+    .img-row { display: flex; gap: 0.8rem; margin: 1.2rem 0; flex-wrap: wrap; }
+    .img-row.single { display: block; }
+
+    .img-wrap {
+      flex: 1;
+      min-width: 180px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .img-wrap img { width: 100%; height: auto; display: block; }
+    .img-caption { font-size: 11px; color: var(--muted); padding: 6px 10px; border-top: 1px solid var(--border); text-align: center; }
+
+    .term { background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; margin: 1.2rem 0; }
+    .term-bar { background: var(--bg3); border-bottom: 1px solid var(--border); padding: 7px 12px; display: flex; align-items: center; gap: 6px; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .dot.r { background: #ff5f57; }
+    .dot.y { background: #febc2e; }
+    .dot.g { background: #28c840; }
+    .term-bar-label { font-size: 11px; color: var(--muted); margin-left: 4px; }
+    .term-body { padding: 0.9rem 1.1rem; font-size: 13px; line-height: 1.8; }
+    .tl { margin-bottom: 0.1rem; }
+    .tl .p { color: var(--green); }
+    .tl .p2 { color: var(--amber); }
+    .tl .c { color: var(--text); }
+    .tl .o { color: var(--muted); }
+    .tl .v { color: var(--amber); }
+    .tl .e { color: var(--red); }
+    .tl .s { color: #50fa7b; }
+    .tl .b { color: var(--blue); }
+
+    .phase-divider { border: none; border-top: 1px dashed var(--border); margin: 3rem 0; }
+
+    footer { border-top: 1px solid var(--border); padding: 2rem; text-align: center; font-size: 12px; color: var(--muted); }
+    footer a { color: var(--green-dim); text-decoration: none; }
+    footer a:hover { color: var(--green); }
+
+    @media (max-width: 500px) { .img-row { flex-direction: column; } }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="../index.html" class="nav-back">back</a>
+    <span class="nav-crumb">writeups / <span>hack10 2026</span></span>
+  </nav>
+
+  <div class="page">
+
+    <header class="post-header">
+      <div class="post-eyebrow">
+        <span class="tag tag-ctf">Hack10 2026</span>
+        <span class="tag tag-cat">boot2root</span>
+        <span class="tag tag-cat">linux</span>
+        <span class="tag tag-diff-medium">medium</span>
+      </div>
+      <h1 class="post-title">Hack10 2026 — boot2root: Freshman-v2</h1>
+      <p class="post-meta">
+        <span>author:</span> 0xYOURHANDLE &nbsp;·&nbsp;
+        <span>event:</span> Hack10 2026 &nbsp;·&nbsp;
+        <span>category:</span> boot2root &nbsp;·&nbsp;
+        <span>flags:</span> user + root
+      </p>
+    </header>
+
+    <!-- ATTACK CHAIN -->
+    <div class="attack-chain">
+      <span class="chain-label">attack chain:</span>
+      <span class="chain-step">nmap scan</span>
+      <span class="chain-arrow">→</span>
+      <span class="chain-step">weak creds</span>
+      <span class="chain-arrow">→</span>
+      <span class="chain-step">file upload bypass</span>
+      <span class="chain-arrow">→</span>
+      <span class="chain-step">php reverse shell</span>
+      <span class="chain-arrow">→</span>
+      <span class="chain-step">creds in dev_notes</span>
+      <span class="chain-arrow">→</span>
+      <span class="chain-step">sudo find privesc</span>
+      <span class="chain-arrow">→</span>
+      <span class="chain-step">root</span>
+    </div>
+
+    <!-- TOC -->
+    <nav class="toc">
+      <div class="toc-title">table of contents</div>
+      <ol>
+        <li><a href="#recon">Recon — Network Scan</a></li>
+        <li><a href="#initial-access">Initial Access — Weak Credentials + File Upload Bypass</a></li>
+        <li><a href="#foothold">Foothold — PHP Reverse Shell</a></li>
+        <li><a href="#lateral">Lateral Movement — Credentials in dev_notes.txt</a></li>
+        <li><a href="#privesc">Privilege Escalation — sudo find GTFOBins</a></li>
+      </ol>
+    </nav>
+
+    <!-- PHASE 1: RECON -->
+    <section class="phase" id="recon">
+      <div class="phase-header">
+        <span class="phase-num">phase 01 /</span>
+        <h2 class="phase-title">Recon — Network Scan</h2>
+      </div>
+
+      <div class="prose">
+        <p>
+          After setting up the target VM in VirtualBox, the first move is to discover what services are exposed.
+          A quick <code>nmap</code> scan against the machine reveals open ports and running services.
+        </p>
+      </div>
+
+      <div class="img-row">
+        <div class="img-wrap">
+          <img src="../hack10-media/image1.png" alt="VirtualBox VM setup" />
+          <div class="img-caption">fig 1 — VM setup in VirtualBox</div>
+        </div>
+        <div class="img-wrap">
+          <img src="../hack10-media/image2.png" alt="VM network config" />
+          <div class="img-caption">fig 2 — network configuration</div>
+        </div>
+      </div>
+
+      <div class="term">
+        <div class="term-bar">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="term-bar-label">nmap</span>
+        </div>
+        <div class="term-body">
+          <div class="tl"><span class="p">$ </span><span class="c">nmap -sV -sC &lt;target-ip&gt;</span></div>
+        </div>
+      </div>
+
+      <div class="img-row single">
+        <div class="img-wrap">
+          <img src="../hack10-media/image3.png" alt="nmap scan results" />
+          <div class="img-caption">fig 3 — nmap scan output showing open ports</div>
+        </div>
+      </div>
+
+    </section>
+
+    <hr class="phase-divider" />
+
+    <!-- PHASE 2: INITIAL ACCESS -->
+    <section class="phase" id="initial-access">
+      <div class="phase-header">
+        <span class="phase-num">phase 02 /</span>
+        <h2 class="phase-title">Initial Access — Weak Credentials + File Upload Bypass</h2>
+      </div>
+
+      <div class="prose">
+        <p>
+          Navigating to the web server, we're greeted by a <strong>Freshman Portal</strong> login page.
+          Default and weak credentials are always worth trying first — <code>admin / admin</code> gets us straight in on the first attempt.
+        </p>
+      </div>
+
+      <div class="img-row single">
+        <div class="img-wrap">
+          <img src="../hack10-media/image4.png" alt="Freshman Portal login page" />
+          <div class="img-caption">fig 4 — Freshman Portal login page</div>
+        </div>
+      </div>
+
+      <div class="callout callout-danger">
+        <div class="callout-label">finding</div>
+        <p>Default credentials <code>admin / admin</code> accepted — no rate limiting, no lockout.</p>
+      </div>
+
+      <div class="prose">
+        <p>
+          Once logged in, there's an <strong>assignment upload page</strong>. The UI claims only <code>.pdf</code> and <code>.docx</code> files are allowed,
+          but this restriction is enforced client-side only — uploading a <code>.php</code> file goes through without issue,
+          and the file is directly accessible via its URL path.
+        </p>
+      </div>
+
+      <div class="img-row single">
+        <div class="img-wrap">
+          <img src="../hack10-media/image5.png" alt="Assignment upload page" />
+          <div class="img-caption">fig 5 — upload page with file type restriction (not enforced server-side)</div>
+        </div>
+      </div>
+
+      <div class="callout callout-warn">
+        <div class="callout-label">vulnerability — unrestricted file upload</div>
+        <p>File type validation is purely client-side. The server accepts any extension including <code>.php</code>, and uploaded files are served directly — allowing remote code execution.</p>
+      </div>
+
+    </section>
+
+    <hr class="phase-divider" />
+
+    <!-- PHASE 3: FOOTHOLD -->
+    <section class="phase" id="foothold">
+      <div class="phase-header">
+        <span class="phase-num">phase 03 /</span>
+        <h2 class="phase-title">Foothold — PHP Reverse Shell</h2>
+      </div>
+
+      <div class="prose">
+        <p>
+          With arbitrary PHP execution available, the next step is a reverse shell.
+          We grab the classic <a href="https://github.com/pentestmonkey/php-reverse-shell/blob/master/php-reverse-shell.php" target="_blank" rel="noopener">pentestmonkey PHP reverse shell</a>,
+          set our attacker IP and chosen port, and upload it through the assignment page.
+        </p>
+      </div>
+
+      <div class="img-row single">
+        <div class="img-wrap">
+          <img src="../hack10-media/image6.png" alt="PHP reverse shell uploaded successfully" />
+          <div class="img-caption">fig 6 — reverse shell uploaded and accessible</div>
+        </div>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <p>Start a netcat listener on port <code>1234</code> before triggering the shell:</p>
+            <div class="term">
+              <div class="term-bar">
+                <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+                <span class="term-bar-label">attacker machine</span>
+              </div>
+              <div class="term-body">
+                <div class="tl"><span class="p">$ </span><span class="c">nc -nlvp 1234</span></div>
+                <div class="tl"><span class="o">listening on [any] 1234 ...</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <p>Navigate to the uploaded PHP file in the browser to trigger execution. The reverse shell connects back:</p>
+            <div class="term">
+              <div class="term-bar">
+                <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+                <span class="term-bar-label">shell received</span>
+              </div>
+              <div class="term-body">
+                <div class="tl"><span class="o">connect to [attacker-ip] from (UNKNOWN) [target-ip]</span></div>
+                <div class="tl"><span class="p2">$ </span><span class="c">whoami</span></div>
+                <div class="tl"><span class="s">www-data</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-info">
+        <div class="callout-label">note</div>
+        <p>We land as <code>www-data</code> — the web server process user. This is low privilege, so we need to enumerate the system to escalate further.</p>
+      </div>
+
+    </section>
+
+    <hr class="phase-divider" />
+
+    <!-- PHASE 4: LATERAL MOVEMENT -->
+    <section class="phase" id="lateral">
+      <div class="phase-header">
+        <span class="phase-num">phase 04 /</span>
+        <h2 class="phase-title">Lateral Movement — Credentials in dev_notes.txt</h2>
+      </div>
+
+      <div class="prose">
+        <p>
+          As <code>www-data</code> there's limited access to useful resources. Static analysis of the filesystem
+          turns up an interesting file: <code>dev_notes.txt</code>.
+        </p>
+      </div>
+
+      <div class="img-row single">
+        <div class="img-wrap">
+          <img src="../hack10-media/image7.png" alt="dev_notes.txt containing credentials" />
+          <div class="img-caption">fig 7 — dev_notes.txt containing plaintext credentials for the freshman user</div>
+        </div>
+      </div>
+
+      <div class="prose">
+        <p>
+          The file contains plaintext credentials for the <strong>freshman</strong> user.
+          We switch to that user with <code>sudo freshman</code> (or <code>su freshman</code>) and immediately find the user flag — base64 encoded.
+        </p>
+      </div>
+
+      <div class="img-row single">
+        <div class="img-wrap">
+          <img src="../hack10-media/image8.png" alt="User flag in base64" />
+          <div class="img-caption">fig 8 — user flag retrieved (base64 encoded)</div>
+        </div>
+      </div>
+
+      <div class="flag-block">
+        <span class="flag-icon user">USER FLAG</span>
+        <span class="flag-val">hack10{3asy_p3asy_1n1t1al_acc3ss}</span>
+      </div>
+
+    </section>
+
+    <hr class="phase-divider" />
+
+    <!-- PHASE 5: PRIVESC -->
+    <section class="phase" id="privesc">
+      <div class="phase-header">
+        <span class="phase-num">phase 05 /</span>
+        <h2 class="phase-title">Privilege Escalation — sudo find via GTFOBins</h2>
+      </div>
+
+      <div class="prose">
+        <p>
+          With a proper user shell, the next goal is <strong>root</strong>. First, check what commands <code>freshman</code> can run with elevated privileges:
+        </p>
+      </div>
+
+      <div class="term">
+        <div class="term-bar">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="term-bar-label">freshman@machine</span>
+        </div>
+        <div class="term-body">
+          <div class="tl"><span class="p">$ </span><span class="c">sudo -l</span></div>
+        </div>
+      </div>
+
+      <div class="img-row single">
+        <div class="img-wrap">
+          <img src="../hack10-media/image9.png" alt="sudo -l output showing find allowed" />
+          <div class="img-caption">fig 9 — sudo -l reveals freshman can run find as root</div>
+        </div>
+      </div>
+
+      <div class="prose">
+        <p>
+          The user can run <code>/usr/bin/find</code> as root without a password.
+          This is a well-known GTFOBins vector — <code>find</code> can execute arbitrary commands via its <code>-exec</code> flag,
+          and since it runs as root here, we can spawn a root shell directly.
+        </p>
+      </div>
+
+      <div class="callout callout-warn">
+        <div class="callout-label">gtfobins — find</div>
+        <p>When <code>find</code> is allowed via <code>sudo</code>, it can break out of restricted environments and spawn a shell with elevated privileges using: <code>sudo find . -exec /bin/sh \; -quit</code></p>
+      </div>
+
+      <div class="img-row single">
+        <div class="img-wrap">
+          <img src="../hack10-media/image10.png" alt="GTFOBins find payload" />
+          <div class="img-caption">fig 10 — GTFOBins find payload for sudo privesc</div>
+        </div>
+      </div>
+
+      <div class="term">
+        <div class="term-bar">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="term-bar-label">privesc</span>
+        </div>
+        <div class="term-body">
+          <div class="tl"><span class="p">$ </span><span class="c">sudo find . -exec /bin/sh \; -quit</span></div>
+          <div class="tl"><span class="p2"># </span><span class="c">whoami</span></div>
+          <div class="tl"><span class="s">root</span></div>
+        </div>
+      </div>
+
+      <div class="img-row">
+        <div class="img-wrap">
+          <img src="../hack10-media/image11.png" alt="Root shell obtained" />
+          <div class="img-caption">fig 11 — root shell obtained</div>
+        </div>
+        <div class="img-wrap">
+          <img src="../hack10-media/image12.png" alt="Root flag" />
+          <div class="img-caption">fig 12 — root flag</div>
+        </div>
+      </div>
+
+      <div class="flag-block">
+        <span class="flag-icon root">ROOT FLAG</span>
+        <span class="flag-val">hack10{r00t_pr1v3sc_v1a_s0ud0_f1nd_w00t}</span>
+      </div>
+
+      <div class="callout callout-warn">
+        <div class="callout-label">key takeaways</div>
+        <p>
+          Three compounding misconfigurations led to full root compromise: default credentials with no lockout policy,
+          server-side file upload validation missing entirely, and an overly permissive <code>sudoers</code> entry granting
+          a low-privilege user unrestricted access to <code>find</code>. Any one of these alone is serious —
+          all three together make the box trivially rootable.
+        </p>
+      </div>
+
+    </section>
+
+  </div><!-- /page -->
+
+  <footer>
+    <a href="../index.html">← back to portfolio</a>
+    &nbsp;·&nbsp;
+    writeup by <span style="color:var(--green-dim)">0xYOURHANDLE</span>
+    &nbsp;·&nbsp;
+    Hack10 2026
+  </footer>
+
+</body>
+</html>
