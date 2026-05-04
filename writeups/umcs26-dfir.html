@@ -100,7 +100,7 @@
 
     .code-block { background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; margin: 1.2rem 0; }
     .code-block-header { background: var(--bg3); border-bottom: 1px solid var(--border); padding: 7px 12px; display: flex; align-items: center; justify-content: space-between; }
-    .code-lang { font-size: 11px; color: var(--amber); letter-spacing: 0.08em; }
+    .code-lang { font-size: 11px; color: var(--amber); }
     .code-file { font-size: 11px; color: var(--muted); }
     .code-body { padding: 1rem 1.2rem; font-size: 13px; line-height: 1.75; overflow-x: auto; }
     .code-body .kw { color: var(--blue); } .code-body .fn { color: var(--green); }
@@ -132,12 +132,11 @@
         <span class="tag tag-chained">chained</span>
         <span class="tag tag-diff-hard">hard</span>
       </div>
-      <h1 class="post-title">UMCS26 — DFIR: Metamon</h1>
+      <h1 class="post-title">UMCS26 — DFIR: Metamon (6/6)</h1>
       <p class="post-meta">
         <span>author:</span> 0xH1 &nbsp;·&nbsp;
         <span>event:</span> UMCS 2026 &nbsp;·&nbsp;
         <span>category:</span> DFIR &nbsp;·&nbsp;
-        <span>flags:</span> 6 chained challenges
       </p>
     </header>
 
@@ -170,20 +169,26 @@
         <h2 class="challenge-title">Metamon 1 — Ransom Note in README.txt</h2>
         <span class="tag tag-cat">forensics</span>
       </div>
-      <div class="prose">
-        <p>We're given a disk image in <strong>AD1 format</strong> loaded into AccessData FTK Imager. Ahmad claims his computer was hacked while simply browsing the web. First step — check the Desktop.</p>
-        <p>A <code>README.txt</code> sits right on the Desktop — classic ransomware behaviour. Its content is a <strong>base64-encoded</strong> message.</p>
-      </div>
-      <div class="img-row">
-        <div class="img-wrap">
-          <img src="../umcs26-dfir-media/image1.png" alt="Metamon 1 challenge description" />
+
+      <div class="img-row single">
+        <div class="img-wrap" style="max-width:380px;">
+          <img src="../umcs26-dfir-media/image1.jpeg" alt="Metamon 1 challenge description" />
           <div class="img-caption">fig 1 — Metamon 1 challenge description</div>
         </div>
+      </div>
+
+      <div class="prose">
+        <p>We're given a disk image in <strong>AD1 format</strong>, loaded straight into AccessData FTK Imager. The scenario: Ahmad claims his computer was hacked while simply browsing the web — he never clicked anything malicious.</p>
+        <p>First stop is the Desktop. A <code>README.txt</code> sits right there — classic ransomware behaviour. Its content is a <strong>base64-encoded</strong> message.</p>
+      </div>
+
+      <div class="img-row single">
         <div class="img-wrap">
-          <img src="../umcs26-dfir-media/image2.png" alt="FTK Imager desktop view" />
-          <div class="img-caption">fig 2 — FTK Imager showing Ahmad's desktop with README.txt</div>
+          <img src="../umcs26-dfir-media/image2.jpeg" alt="FTK Imager showing desktop with README.txt" />
+          <div class="img-caption">fig 2 — FTK Imager view of Ahmad's desktop, README.txt visible</div>
         </div>
       </div>
+
       <div class="term">
         <div class="term-bar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><span class="term-bar-label">decode ransom note</span></div>
         <div class="term-body">
@@ -191,16 +196,14 @@
           <div class="tl"><span class="s">UMCS{3z_f1rs7_glaf_4t_r4nsom_n0T3}</span></div>
         </div>
       </div>
+
       <div class="img-row single">
         <div class="img-wrap">
-          <img src="../umcs26-dfir-media/image3.png" alt="Terminal decoding the base64 flag" />
+          <img src="../umcs26-dfir-media/image3.jpeg" alt="Terminal decoding the base64 flag" />
           <div class="img-caption">fig 3 — decoding the base64 ransom note in terminal</div>
         </div>
       </div>
-      <div class="callout callout-info">
-        <div class="callout-label">note</div>
-        <p>The README.txt content is visible in FTK Imager's Custom Content Sources pane — no need to export the file first.</p>
-      </div>
+
       <div class="flag-block">
         <span class="flag-icon">METAMON 1</span>
         <span class="flag-val">UMCS{3z_f1rs7_glaf_4t_r4nsom_n0T3}</span>
@@ -216,46 +219,54 @@
         <h2 class="challenge-title">Metamon 2 — Malicious Browser Activity</h2>
         <span class="tag tag-cat">forensics</span>
       </div>
+
       <div class="img-row single">
-        <div class="img-wrap">
-          <img src="../umcs26-dfir-media/image4.png" alt="Metamon 2 challenge description" />
+        <div class="img-wrap" style="max-width:380px;">
+          <img src="../umcs26-dfir-media/image4.jpeg" alt="Metamon 2 challenge description" />
           <div class="img-caption">fig 4 — Metamon 2 challenge description</div>
         </div>
       </div>
+
       <div class="prose">
-        <p>The challenge asks us to find malicious browser activity. For <strong>Microsoft Edge</strong>, browser history is a SQLite database at:</p>
+        <p>The challenge asks us to find malicious browser activity. For <strong>Microsoft Edge</strong>, history is a SQLite database stored at:</p>
       </div>
+
       <div class="term">
         <div class="term-bar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><span class="term-bar-label">history path</span></div>
         <div class="term-body">
           <div class="tl"><span class="v">C:\Users\ahmad\AppData\Local\Microsoft\Edge\User Data\Default\History</span></div>
         </div>
       </div>
+
       <div class="img-row single">
         <div class="img-wrap">
           <img src="../umcs26-dfir-media/image5.png" alt="FTK Imager showing Edge History file" />
           <div class="img-caption">fig 5 — locating the Edge History SQLite file in FTK Imager</div>
         </div>
       </div>
+
       <div class="prose">
-        <p>Export the file and use <code>strings</code> with <code>grep</code> to filter out Microsoft/Bing noise, leaving only suspicious external URLs:</p>
+        <p>Exporting the file, the raw binary is messy with redundant links. Piping through <code>strings</code> and <code>grep</code> strips Microsoft/Bing noise, leaving only suspicious external URLs:</p>
       </div>
+
       <div class="term">
         <div class="term-bar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><span class="term-bar-label">filter history</span></div>
         <div class="term-body">
           <div class="tl"><span class="p">$ </span><span class="c">strings History | grep -Eo 'https?://[^ ]+' | grep -viE "bing|microsoft" | sort -u</span></div>
-          <div class="tl"><span class="o">http://pinarat.github.io/a</span></div>
-          <div class="tl"><span class="v">https://pinarat.github.io/a/</span></div>
-          <div class="tl"><span class="o">https://pinarat.github.io/a/reCAPTCHA</span></div>
-          <div class="tl"><span class="o">https://pinarat.github.io/areCAPTCHA</span></div>
         </div>
       </div>
+
       <div class="img-row single">
         <div class="img-wrap">
           <img src="../umcs26-dfir-media/image6.png" alt="grep output showing suspicious pinarat URLs" />
           <div class="img-caption">fig 6 — filtered history revealing suspicious pinarat.github.io URLs</div>
         </div>
       </div>
+
+      <div class="prose">
+        <p>The standout suspicious URL is <code>https://pinarat.github.io/a/</code> — an unknown GitHub Pages site Ahmad visited, with a fake reCAPTCHA path also present.</p>
+      </div>
+
       <div class="flag-block">
         <span class="flag-icon">METAMON 2</span>
         <span class="flag-val">UMCS{https://pinarat.github.io/a/}</span>
@@ -271,30 +282,41 @@
         <h2 class="challenge-title">Metamon 3 — Suspicious Site Discovery</h2>
         <span class="tag tag-cat">OSINT</span>
       </div>
+
       <div class="img-row single">
-        <div class="img-wrap">
-          <img src="../umcs26-dfir-media/image7.png" alt="Metamon 3 challenge description" />
+        <div class="img-wrap" style="max-width:380px;">
+          <img src="../umcs26-dfir-media/image7.jpeg" alt="Metamon 3 challenge description" />
           <div class="img-caption">fig 7 — Metamon 3 challenge description</div>
         </div>
       </div>
+
       <div class="prose">
-        <p>Visiting <code>https://pinarat.github.io/a/</code> reveals a fake CAPTCHA page prompting the user to download <code>Cutemeowmoew.zip</code>. The browser extension flags it as a deceptive site.</p>
-        <p>Rather than interacting with it, we pivot to the attacker's GitHub: <code>https://github.com/pinarat</code>. The <strong>a</strong> repository contains <code>b.mp4</code>, <code>index.html</code>, and <code>test.txt</code>. The MP4 file stands out immediately.</p>
+        <p>Visiting <code>https://pinarat.github.io/a/</code> reveals a page prompting users to complete a fake CAPTCHA to download <code>Cutemeowmoew.zip</code>. The browser extension flags it as a deceptive site.</p>
       </div>
-      <div class="img-row">
+
+      <div class="img-row single">
         <div class="img-wrap">
-          <img src="../umcs26-dfir-media/image8.png" alt="Fake CAPTCHA page" />
+          <img src="../umcs26-dfir-media/image8.jpeg" alt="Fake CAPTCHA page at pinarat.github.io" />
           <div class="img-caption">fig 8 — deceptive CAPTCHA page prompting malicious download</div>
         </div>
+      </div>
+
+      <div class="prose">
+        <p>Rather than interacting with it, we pivot to the attacker's GitHub: <code>https://github.com/pinarat</code>. The <strong>a</strong> repository contains <code>b.mp4</code>, <code>index.html</code>, and <code>test.txt</code> — the MP4 stands out immediately.</p>
+      </div>
+
+      <div class="img-row single">
         <div class="img-wrap">
-          <img src="../umcs26-dfir-media/image9.png" alt="pinarat GitHub repository" />
-          <div class="img-caption">fig 9 — pinarat/a repository containing b.mp4</div>
+          <img src="../umcs26-dfir-media/image9.jpeg" alt="pinarat GitHub repository showing b.mp4" />
+          <div class="img-caption">fig 9 — pinarat/a GitHub repository containing b.mp4</div>
         </div>
       </div>
+
       <div class="callout callout-warn">
         <div class="callout-label">OSINT pivot</div>
-        <p>When a malicious site doesn't yield direct results, check the hosting account. Commit history and associated repositories often contain artifacts left behind by the attacker.</p>
+        <p>When a malicious site doesn't yield direct results, check the hosting account. Commit history and repositories often contain artifacts left behind by the attacker.</p>
       </div>
+
       <div class="flag-block">
         <span class="flag-icon">METAMON 3</span>
         <span class="flag-val">UMCS{https://pinarat.github.io/a/}</span>
@@ -311,24 +333,29 @@
         <span class="tag tag-cat">steganography</span>
         <span class="tag tag-cat">malware analysis</span>
       </div>
+
       <div class="prose">
-        <p>Running <code>exiftool</code> on <code>b.mp4</code> immediately raises suspicion — <strong>0 second duration</strong> and an unknown trailer warning. It's not really a video.</p>
+        <p>Downloading <code>b.mp4</code> and running <code>exiftool</code> immediately raises suspicion — <strong>0 second duration</strong> and an unknown trailer warning. This is not a real video.</p>
       </div>
+
       <div class="img-row single">
         <div class="img-wrap">
           <img src="../umcs26-dfir-media/image10.png" alt="exiftool output on b.mp4" />
-          <div class="img-caption">fig 10 — exiftool revealing b.mp4 is suspicious (0s duration, unknown trailer)</div>
+          <div class="img-caption">fig 10 — exiftool: 0s duration and unknown trailer warning on b.mp4</div>
         </div>
       </div>
+
       <div class="prose">
         <p>Running <code>binwalk</code> confirms an HTML document is appended after the MP4 data:</p>
       </div>
+
       <div class="img-row single">
         <div class="img-wrap">
           <img src="../umcs26-dfir-media/image11.png" alt="binwalk output showing embedded HTML" />
           <div class="img-caption">fig 11 — binwalk detecting an embedded HTML document at offset 4172063</div>
         </div>
       </div>
+
       <div class="steps">
         <div class="step">
           <div class="step-num">1</div>
@@ -343,10 +370,11 @@
             </div>
           </div>
         </div>
+
         <div class="step">
           <div class="step-num">2</div>
           <div class="step-content">
-            <p>The extracted file is an <strong>HTA (HTML Application)</strong> — runs silently minimized, executes a <code>cmd</code> command to curl down <code>rizzler.bat</code> from a GitHub Gist:</p>
+            <p>The extracted file is an <strong>HTA (HTML Application)</strong> — runs silently minimized, uses VBScript to curl down <code>rizzler.bat</code> from a GitHub Gist:</p>
             <div class="code-block">
               <div class="code-block-header">
                 <span class="code-lang">vbscript</span>
@@ -360,23 +388,26 @@
             </div>
           </div>
         </div>
+
         <div class="step">
           <div class="step-num">3</div>
           <div class="step-content">
-            <p>Browsing the Gist URL reveals <code>rizzler.bat</code> — a batch file with a large Base64-encoded <code>:PAYLOAD</code> block. Decoding it exposes a PowerShell stager with the flag embedded as a variable:</p>
+            <p>Browsing the Gist URL reveals <code>rizzler.bat</code> — a batch file with a large Base64 <code>:PAYLOAD</code> block. Decoding it exposes a PowerShell stager containing the flag as a variable:</p>
             <div class="img-row single">
               <div class="img-wrap">
-                <img src="../umcs26-dfir-media/image12.png" alt="Decoded PowerShell payload with flag" />
-                <div class="img-caption">fig 12 — decoded PowerShell payload containing the flag variable</div>
+                <img src="../umcs26-dfir-media/image12.jpeg" alt="rizzler.bat on GitHub Gist" />
+                <div class="img-caption">fig 12 — rizzler.bat on GitHub Gist with encoded payload</div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
       <div class="callout callout-danger">
         <div class="callout-label">malware behaviour — rizzler.bat</div>
         <p>UAC bypass via <code>fodhelper.exe</code> registry hijacking → URL reconstructed via ROT cipher → downloads <code>profile.png</code> as next-stage carrier → calls <code>oz1rizz</code> extraction function.</p>
       </div>
+
       <div class="flag-block">
         <span class="flag-icon">METAMON 4</span>
         <span class="flag-val">UMCS{Ra-T4-TA-Ta_BU7_1_doN7_w4nT_tO}</span>
@@ -393,24 +424,49 @@
         <span class="tag tag-cat">steganography</span>
         <span class="tag tag-cat">reverse engineering</span>
       </div>
+
+      <div class="img-row single">
+        <div class="img-wrap" style="max-width:380px;">
+          <img src="../umcs26-dfir-media/image13.jpeg" alt="Metamon 5 challenge description" />
+          <div class="img-caption">fig 13 — Metamon 5 challenge description</div>
+        </div>
+      </div>
+
       <div class="prose">
-        <p>Looking at the commit history of <code>pinarat/a</code>, a <code>profile.png</code> was <strong>deleted</strong>. Downloading it from the commit history, standard LSB stego tools yield nothing.</p>
-        <p>The decoded PowerShell from <code>rizzler.bat</code> reveals a <strong>custom scheme</strong>: full RGB byte values of each pixel are raw data bytes. Pixels 0 and 1 store the payload size as a 32-bit integer header.</p>
+        <p>Looking at the commit history of <code>pinarat/a</code>, a <code>profile.png</code> was <strong>deleted</strong> — suspicious. Downloading it from the old commit, standard LSB stego tools yield nothing.</p>
       </div>
-      <div class="img-row">
+
+      <div class="img-row single">
         <div class="img-wrap">
-          <img src="../umcs26-dfir-media/image13.png" alt="binwalk on profile.png" />
-          <div class="img-caption">fig 13 — binwalk on profile.png (standard approach doesn't work)</div>
-        </div>
-        <div class="img-wrap">
-          <img src="../umcs26-dfir-media/image14.png" alt="Further investigation artifact" />
-          <div class="img-caption">fig 14 — further investigation of artifacts</div>
+          <img src="../umcs26-dfir-media/image14.jpeg" alt="Deleted profile.png in commit history" />
+          <div class="img-caption">fig 14 — profile.png deleted in commit history</div>
         </div>
       </div>
+
+      <div class="img-row single">
+        <div class="img-wrap">
+          <img src="../umcs26-dfir-media/image15.jpeg" alt="Downloaded profile.png" />
+          <div class="img-caption">fig 15 — downloaded profile.png from old commit</div>
+        </div>
+      </div>
+
+      <div class="img-row single">
+        <div class="img-wrap">
+          <img src="../umcs26-dfir-media/image16.png" alt="binwalk on profile.png — no useful results" />
+          <div class="img-caption">fig 16 — binwalk on profile.png (standard approach yields nothing useful)</div>
+        </div>
+      </div>
+
+      <div class="prose">
+        <p>The answer is in the decoded PowerShell from <code>rizzler.bat</code>. The <code>oz1rizz</code> function reveals a <strong>custom steganography scheme</strong> — not standard LSB. Instead, full RGB byte values of each pixel are used as raw data bytes. Pixels 0 and 1 store the payload size as a 32-bit integer header.</p>
+        <p>The script also decrypts using XOR with a key derived by applying ROT-24 to the obfuscated string <code>54e6739f170fg582</code>, then gzip-decompresses the result.</p>
+      </div>
+
       <div class="callout callout-purple">
         <div class="callout-label">custom stego scheme</div>
-        <p>Pixel 0 + Pixel 1 → 32-bit payload size. From Pixel 2 onward, every R/G/B value is a raw data byte. XOR'd with key derived by ROT-24 of <code>54e6739f170fg582</code>, then gzip-decompressed.</p>
+        <p>Pixel 0 + Pixel 1 → 32-bit payload size via bitwise shifts. From Pixel 2 onward, every R/G/B value is a raw data byte. XOR'd with key derived by ROT-24 of <code>54e6739f170fg582</code>, then gzip-decompressed.</p>
       </div>
+
       <div class="code-block">
         <div class="code-block-header">
           <span class="code-lang">python</span>
@@ -454,12 +510,14 @@
 <br><span class="fn">print</span>(<span class="var">payload</span>.<span class="fn">decode</span>(<span class="str">'utf-8'</span>, errors<span class="op">=</span><span class="str">'ignore'</span>))
         </div>
       </div>
+
       <div class="img-row single">
         <div class="img-wrap">
-          <img src="../umcs26-dfir-media/image15.png" alt="Python script output revealing flag" />
-          <div class="img-caption">fig 15 — extract.py output revealing the decoded payload and flag</div>
+          <img src="../umcs26-dfir-media/image17.png" alt="Python extract.py output with flag" />
+          <div class="img-caption">fig 17 — extract.py output revealing the decoded payload and flag</div>
         </div>
       </div>
+
       <div class="flag-block">
         <span class="flag-icon">METAMON 5</span>
         <span class="flag-val">UMCS{STay_1N_7hE_M1dDLe,l1kE_Y0U_A_LiTlLE,DONt_Want_NO_RidD1E}</span>
@@ -475,15 +533,25 @@
         <h2 class="challenge-title">Metamon 6 — Password Recovery from memdump</h2>
         <span class="tag tag-cat">memory forensics</span>
       </div>
+
       <div class="img-row single">
-        <div class="img-wrap">
-          <img src="../umcs26-dfir-media/image16.png" alt="Metamon 6 challenge description" />
-          <div class="img-caption">fig 16 — Metamon 6 challenge description</div>
+        <div class="img-wrap" style="max-width:380px;">
+          <img src="../umcs26-dfir-media/image18.jpeg" alt="Metamon 6 challenge description" />
+          <div class="img-caption">fig 18 — Metamon 6 challenge description</div>
         </div>
       </div>
+
       <div class="prose">
-        <p>Back in the AD1 image, the Desktop also contained <code>LOCKED.7z</code> and a <code>memdump.mem</code> raw memory dump. Running <code>strings</code> on the dump and grepping for <code>LOCKED.7z</code> surfaces the exact 7-Zip command the attacker ran — including the <strong>password passed via <code>-p</code></strong>:</p>
+        <p>Back in the AD1 image, the Desktop also contained a <code>LOCKED.7z</code> and a <code>memdump.mem</code> raw memory dump. Running <code>strings</code> on the dump and grepping for <code>LOCKED.7z</code> surfaces the exact 7-Zip command the attacker ran — including the <strong>password passed via <code>-p</code></strong>:</p>
       </div>
+
+      <div class="img-row single">
+        <div class="img-wrap">
+          <img src="../umcs26-dfir-media/image19.png" alt="Desktop files in FTK Imager showing LOCKED.7z" />
+          <div class="img-caption">fig 19 — LOCKED.7z and memdump.mem on the desktop</div>
+        </div>
+      </div>
+
       <div class="term">
         <div class="term-bar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><span class="term-bar-label">memory forensics</span></div>
         <div class="term-body">
@@ -491,12 +559,18 @@
           <div class="tl"><span class="o">...7z.exe" a "...\LOCKED.7z" "...\important.txt" </span><span class="v">-pGcJqVl9YaVwBIPC4nbOW</span><span class="o"> -mhe=on"</span></div>
         </div>
       </div>
+
       <div class="img-row single">
         <div class="img-wrap">
-          <img src="../umcs26-dfir-media/image17.png" alt="strings memdump showing password" />
-          <div class="img-caption">fig 17 — password recovered from memdump via strings grep</div>
+          <img src="../umcs26-dfir-media/image20.png" alt="strings memdump grep output showing password" />
+          <div class="img-caption">fig 20 — password recovered in plaintext from memdump</div>
         </div>
       </div>
+
+      <div class="prose">
+        <p>Using the recovered password to extract <code>LOCKED.7z</code> succeeds, and the archive contains <code>important.txt</code> with the final flag.</p>
+      </div>
+
       <div class="term">
         <div class="term-bar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><span class="term-bar-label">extract archive</span></div>
         <div class="term-body">
@@ -505,16 +579,19 @@
           <div class="tl"><span class="s">Everything is Ok</span></div>
         </div>
       </div>
+
       <div class="img-row single">
         <div class="img-wrap">
-          <img src="../umcs26-dfir-media/image18.png" alt="7z extraction successful" />
-          <div class="img-caption">fig 18 — successful extraction of LOCKED.7z with recovered password</div>
+          <img src="../umcs26-dfir-media/image21.jpeg" alt="7z extraction successful" />
+          <div class="img-caption">fig 21 — successful extraction of LOCKED.7z with recovered password</div>
         </div>
       </div>
+
       <div class="callout callout-warn">
         <div class="callout-label">key takeaway — memory forensics</div>
-        <p>Passwords passed as command-line arguments are preserved in memory. <code>strings</code> on raw dumps can surface credentials and keys that an attacker assumed were ephemeral.</p>
+        <p>Passwords passed as command-line arguments are preserved in memory dumps. <code>strings</code> on raw dumps can surface credentials and keys that an attacker assumed were ephemeral — always check process command lines in memory.</p>
       </div>
+
       <div class="flag-block">
         <span class="flag-icon">METAMON 6</span>
         <span class="flag-val">UMCS{GcJqVl9YaVwBIPC4nbOW}</span>
